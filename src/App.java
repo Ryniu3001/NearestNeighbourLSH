@@ -16,8 +16,8 @@ import java.util.stream.Stream;
 public class App {
 
     private static final int p = 1000003;
-    private static final int b = 4; //na ile czesci dzielimy wektory haashy
-    private static final int r = 4; //długosc kazdego podzbioru
+    private static final int b = 12; //na ile czesci dzielimy wektory haashy
+    private static final int r = 2; //długosc kazdego podzbioru
     private static long M = 1000000; //max id piosenki
 
     private static final List<Integer> aList = new ArrayList<>();
@@ -61,7 +61,7 @@ public class App {
         userSignatures.keySet().forEach(userId -> {
             usersBuckets.putIfAbsent(userId, new ArrayList<>());
             for (int i = 0; i < b ; i++) {
-                Integer bucketKey = userSignatures.get(userId).subList(i*r, ((i+1)*r)).toString().hashCode();
+                Integer bucketKey = userSignatures.get(userId).subList(i*r, ((i+1)*r)).toString().concat("b" + i).hashCode();
                 // zapisanie do bucketu
                 synchronized (App.class) {
                     buckets.putIfAbsent(bucketKey, new ArrayList<>());
@@ -101,6 +101,7 @@ public class App {
             while ((value = reader.readLine()) != null) {
                 Integer userId = Integer.valueOf(value);
                 boolean foundNeighbour = false;
+
                 while (!(value = reader.readLine()).equals("|")) {
                     bucketId = Integer.valueOf(value);
                     if (buckets.containsKey(bucketId)) {
@@ -134,22 +135,26 @@ public class App {
 
     private static Map<Integer, Map<Integer, Double>> calculateJaccard(final Map<Integer, Map<Integer, Double>> similarities, final Map<Integer, List<Integer>> buckets,
                                                                        Map<Integer, List<Integer>> userSignatures, Integer userId, Integer bucketId){
+
+        if (!similarities.containsKey(userId)) {
             similarities.putIfAbsent(userId, new HashMap<>());
             similarities.get(userId).put(userId, 1.0);
-            for (int i = 0; i < buckets.get(bucketId).size(); i++) {
-                Integer user2Id = buckets.get(bucketId).get(i);
+        }
+        for (int i = 0; i < buckets.get(bucketId).size(); i++) {
+            if (similarities.get(userId).size() > 99)
+                break;
+            Integer user2Id = buckets.get(bucketId).get(i);
 
-/*            if (similarities.get(userId).containsKey(user2Id)) //
+            if (similarities.get(userId).containsKey(user2Id)) //
                 continue;
             if (similarities.containsKey(user2Id) && similarities.get(user2Id).containsKey(userId)) {
                 similarities.get(userId).put(user2Id, similarities.get(user2Id).get(userId));
                 continue;
-            }*/
-                if (user2Id == userId)
-                    continue;
-                similarities.get(userId).put(user2Id, jaccard(userSignatures.get(userId), userSignatures.get(user2Id)));
             }
-
+            if (user2Id == userId)
+                continue;
+            similarities.get(userId).put(user2Id, jaccard(userSignatures.get(userId), userSignatures.get(user2Id)));
+        }
         return similarities;
     }
 
